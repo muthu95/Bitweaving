@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
+mod index_builder;
+
 fn read_file() {
     // Create a path to the desired file
     let path = Path::new("src/hello.txt");
@@ -30,5 +32,6 @@ fn read_file() {
 }
 
 fn main() {
-    read_file();
+    index_builder::create_column_store("src/sample.csv", "output_col", 3);
+
 }
