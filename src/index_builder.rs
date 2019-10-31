@@ -4,11 +4,17 @@ use std::io;
 use std::error::Error;
 use std::io::prelude::*;
 
-const BITS_PER_WORD:usize = 32;
+//Following are configuration variables. Change and see the results.
+const BITS_PER_WORD:usize = 16;
 const WORDS_PER_SEGMENT:usize = 32;
 const WORDS_PER_BIT_GROUP:usize = 8;
-const SEGMENTS_PER_BIT_GROUP:usize = 2;
-const WORDS_OF_SEGMENT_PER_BIT_GROUP:usize = (WORDS_PER_BIT_GROUP/SEGMENTS_PER_BIT_GROUP);
+const SEGMENTS_PER_BIT_GROUP:usize = 4;
+
+//Number of words of a segment that belong to 1 bit group.
+const WORDS_OF_SEGMENT_PER_BIT_GROUP:usize = (WORDS_PER_BIT_GROUP / SEGMENTS_PER_BIT_GROUP);
+
+//Number of bit groups than a segment spans.
+const BIT_GROUP_SPAN_OF_A_SEGMENT:usize = (WORDS_PER_SEGMENT / WORDS_OF_SEGMENT_PER_BIT_GROUP);
 
 pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
 
@@ -55,35 +61,56 @@ pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
 fn process_segment(segment_number: &usize, segment: &[u32], bit_groups: &mut Vec<[u32; WORDS_PER_BIT_GROUP]>) {
     println!("Segment Number: {}", segment_number);
     println!("Elements in segment: {:?}", segment);
+
     let mut i:usize = BITS_PER_WORD;
     let mut k:usize = 0;
     while i > 0 {
-        i = i-1;
+        //i is the index for iterating through each bit from MSB to LSB.
+        //It effectively runs from BITS_PER_WORD-1 to 0.
+        i -= 1;
+
         let mut val:u32 = 0;
         let mut j:usize = 0;
         while j < segment.len() {
+            //j is the index for iterating through each word of the segment.
+
             //println!("In {}th position, number = {} & currentBit = {}", i, segment[j], (segment[j]>>i)&1);
-            val = (val<<1)|((segment[j]>>i)&1);
-            j = j+1;
+
+            //Here, we accumulate the i'th bit word in 'val'
+            // by taking i'th bit from each word of the segment.
+            val = (val << 1) | ((segment[j] >> i) & 1);
+            j += 1;
         }
+        //Now 'val' will have i'th bits of all words in the segment.
+
         //println!("{}th position val is {}", i, val);
-        let bit_group_number:usize = (BITS_PER_WORD/WORDS_OF_SEGMENT_PER_BIT_GROUP) - 1 - (i/WORDS_OF_SEGMENT_PER_BIT_GROUP);
-        let index_within_bit_group:usize = (segment_number*WORDS_OF_SEGMENT_PER_BIT_GROUP) + (k%WORDS_OF_SEGMENT_PER_BIT_GROUP);
+
+        //See the LAYOUT in Line 131 to understand how I arrived at these 2 formulas.
+        //Also uncomment Line 95 for easy understanding.
+        let bit_group_number:usize = ((segment_number / SEGMENTS_PER_BIT_GROUP) * BIT_GROUP_SPAN_OF_A_SEGMENT) + (k / WORDS_OF_SEGMENT_PER_BIT_GROUP);
+
+        let index_within_bit_group:usize = ((segment_number * WORDS_OF_SEGMENT_PER_BIT_GROUP) +
+        (k % WORDS_OF_SEGMENT_PER_BIT_GROUP)) % WORDS_PER_BIT_GROUP;
+
         //println!("bit_group_number: {}, index_within_bit_group: {}", bit_group_number, index_within_bit_group);
+
         if bit_group_number >= bit_groups.len() {
-            //Create a bit groups
+            //Create a bit group.
             bit_groups.push([0; WORDS_PER_BIT_GROUP]);
         }
         bit_groups[bit_group_number][index_within_bit_group] = val;
-        k = k+1;
+
+        //k is used to calculate bit_group_number & index_within_bit_group.
+        //It runs from [0, BITS_PER_WORD].
+        k += 1;
     }
 }
 
 pub fn create_byte_code(arr: &[u32]) {
     println!("Received {} elements", arr.len());
 
-    let number_of_segments:usize = arr.len()/WORDS_PER_SEGMENT;
-    let number_of_bit_groups:usize = arr.len()/WORDS_PER_BIT_GROUP;
+    let number_of_segments:usize = arr.len() / WORDS_PER_SEGMENT;
+    let number_of_bit_groups:usize = arr.len() / WORDS_PER_BIT_GROUP;
     println!("No of Segments: {}", number_of_segments);
     println!("No of Bit Groups: {}", number_of_bit_groups);
 
@@ -91,12 +118,29 @@ pub fn create_byte_code(arr: &[u32]) {
 
     /* Vectors because we dont know the number of bit groups during compile time.
     Each bit group is array because they should be stored continuously in memory.*/
+    //Vector of arrays
     let mut bit_groups: Vec<[u32; WORDS_PER_BIT_GROUP]> = Vec::new();
 
     let mut i:usize = 0;
     while i < arr.len() {
-        process_segment(&(i/WORDS_PER_SEGMENT), &arr[i .. i+WORDS_PER_SEGMENT], &mut bit_groups);
+        //Take each segment and put all the words inside it, into corressponding bit groups.
+        process_segment(&(i / WORDS_PER_SEGMENT), &arr[i .. i+WORDS_PER_SEGMENT], &mut bit_groups);
         i += WORDS_PER_SEGMENT;
     }
+
+    // LAYOUT
+    //For the given 64 values, Now each bit group will have
+    //BG0 -> [seg0W31, seg0W30, seg0W29, seg0W28, seg1W31, seg1W30, seg1W29, seg1W28]
+    //BG1 -> [seg0W27, seg0W26, seg0W25, seg0W24, seg1W27, seg1W26, seg1W25, seg1W24]
+    //.
+    //.
+    //.
+    //BG7 -> [seg0W3, seg0W2, seg0W1, seg0W0, seg1W3, seg1W2, seg1W1, seg1W0]
+    //BG8 -> [seg2W31, seg2W30, seg2W29, seg2W28, seg3W31, seg3W30, seg3W29, seg3W28]
+    //BG9 -> [seg2W27, seg2W26, seg2W25, seg2W24, seg3W27, seg3W26, seg3W25, seg3W24]
+    //.
+    //.
+    //.
+    //BG15 -> [seg2W3, seg2W2, seg2W1, seg2W0, seg3W3, seg3W2, seg3W1, seg3W0]
     println!("BIT GROUP: {:?}", bit_groups);
 }
