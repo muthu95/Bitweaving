@@ -1,6 +1,10 @@
 mod index_builder;
+mod scanner;
+
+extern crate bit_vec;
 
 fn main() {
+
     index_builder::create_column_store("src/sample.csv", "output_col", 3);
     let mut arr: [u32; 128] = [0; 128];
     for i in 0..64 {
@@ -12,4 +16,5 @@ fn main() {
         j += 1;
     }
     index_builder::create_byte_code(&arr);
+
 }
