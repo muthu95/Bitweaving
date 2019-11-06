@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::path::Path;
 use std::io;
-use std::error::Error;
+use std::error::Error as Err;
+use std::io::{BufReader, Error};
 use std::io::prelude::*;
 
 //Following are configuration variables. Change and see the results.
@@ -58,7 +59,7 @@ pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
 
 }
 
-fn process_segment(segment_number: &usize, segment: &[u32], bit_groups: &mut Vec<[u32; WORDS_PER_BIT_GROUP]>) {
+fn process_segment(segment_number: usize, segment: &[u32], segment_len: usize, bit_groups: &mut Vec<[u32; WORDS_PER_BIT_GROUP]>) {
     println!("Segment Number: {}", segment_number);
     println!("Elements in segment: {:?}", segment);
 
@@ -71,7 +72,7 @@ fn process_segment(segment_number: &usize, segment: &[u32], bit_groups: &mut Vec
 
         let mut val:u32 = 0;
         let mut j:usize = 0;
-        while j < segment.len() {
+        while j < segment_len {
             //j is the index for iterating through each word of the segment.
 
             //println!("In {}th position, number = {} & currentBit = {}", i, segment[j], (segment[j]>>i)&1);
@@ -106,7 +107,7 @@ fn process_segment(segment_number: &usize, segment: &[u32], bit_groups: &mut Vec
     }
 }
 
-pub fn create_byte_code(arr: &[u32]) {
+pub fn create_byte_code_from_array(arr: &[u32]) {
     println!("Received {} elements", arr.len());
 
     let number_of_segments:usize = arr.len() / WORDS_PER_SEGMENT;
@@ -124,7 +125,7 @@ pub fn create_byte_code(arr: &[u32]) {
     let mut i:usize = 0;
     while i < arr.len() {
         //Take each segment and put all the words inside it, into corressponding bit groups.
-        process_segment(&(i / WORDS_PER_SEGMENT), &arr[i .. i+WORDS_PER_SEGMENT], &mut bit_groups);
+        process_segment(i / WORDS_PER_SEGMENT, &arr[i .. i+WORDS_PER_SEGMENT], WORDS_PER_SEGMENT, &mut bit_groups);
         i += WORDS_PER_SEGMENT;
     }
 
@@ -143,4 +144,38 @@ pub fn create_byte_code(arr: &[u32]) {
     //.
     //BG15 -> [seg2W3, seg2W2, seg2W1, seg2W0, seg3W3, seg3W2, seg3W1, seg3W0]
     println!("BIT GROUP: {:?}", bit_groups);
+}
+
+pub fn create_byte_code_from_file(filename: String) -> Result<(), Error> {
+    println!("Creating bytecode for the file: {}", filename);
+
+    let input = File::open(filename)?;
+    let buffered = BufReader::new(input);
+
+    let mut bit_groups: Vec<[u32; WORDS_PER_BIT_GROUP]> = Vec::new();
+    let mut lines_read: usize = 0;
+    let mut current_segment: [u32; WORDS_PER_SEGMENT] = [0; WORDS_PER_SEGMENT];
+
+    //Read input file line by line
+    for line in buffered.lines() {
+        //println!("{}", line?);
+        //Unwrapping Result gives the line as String.
+        let string_line: String = line.unwrap();
+        //Parsing it to u32
+        current_segment[lines_read % WORDS_PER_SEGMENT] = string_line.parse::<u32>().unwrap();
+        lines_read = lines_read + 1;
+        //If a segment is filled up, then process it.
+        if lines_read % WORDS_PER_SEGMENT == 0 {
+            process_segment((lines_read/WORDS_PER_SEGMENT)-1, &current_segment, WORDS_PER_SEGMENT, &mut bit_groups)
+        }
+    }
+
+    //Some partially filled segment found in the end.
+    //TODO Handle this.
+    /*if lines_read % WORDS_PER_SEGMENT != 0 {
+        process_segment(lines_read/WORDS_PER_SEGMENT, &current_segment, lines_read % WORDS_PER_SEGMENT, &mut bit_groups);
+    }*/
+
+    println!("BIT GROUP: {:?}", bit_groups);
+    Ok(())
 }
