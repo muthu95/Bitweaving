@@ -1,6 +1,9 @@
 use std::fs::File;
 use std::io::{Write, Error};
 mod index_builder;
+mod scanner;
+
+extern crate bit_vec;
 
 fn write_to_file(arr: &[u32]) -> Result<(), Error> {
     let mut output = File::create("int_column")?;
@@ -11,6 +14,7 @@ fn write_to_file(arr: &[u32]) -> Result<(), Error> {
 }
 
 fn main() {
+
     index_builder::create_column_store("src/sample.csv", "output_col", 3);
     let mut arr: [u32; 128] = [0; 128];
     for i in 0..64 {
@@ -30,4 +34,5 @@ fn main() {
         Err(e) => println!("error creating bytecode: {:?}", e),
         Ok(()) => println!("Successfully created bytecode for the file"),
     }
+
 }
