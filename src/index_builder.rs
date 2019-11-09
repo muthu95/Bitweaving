@@ -6,9 +6,19 @@ use std::io::{BufReader, Error};
 use std::io::prelude::*;
 
 //Following are configuration variables. Change and see the results.
-const BITS_PER_WORD:usize = 16;
+// processor word size
+const BITS_PER_WORD:usize = 32;
+
+/* 
+have the value same as processor word  -> k 
+(number of words in the column grouped as segments)
+*/
 const WORDS_PER_SEGMENT:usize = 32;
+
+// maximum limit on the number of words in the bit group
 const WORDS_PER_BIT_GROUP:usize = 8;
+
+// To put a limit on number of segments that can be placed in the bit group
 const SEGMENTS_PER_BIT_GROUP:usize = 4;
 
 //Number of words of a segment that belong to 1 bit group.
