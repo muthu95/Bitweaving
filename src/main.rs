@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{Write, Error};
+mod index_builder2;
 mod index_builder;
 mod scanner;
 
@@ -27,11 +28,10 @@ fn main() {
         j += 1;
     }
 
-    //Use this once to create the "int_column" file for creating the test file
+    //Use this once to create the "int_column" file for creating the input test file
     write_to_file(&arr);
 
-    index_builder::create_byte_code_from_array(&arr);
-    match index_builder::create_byte_code_from_file(String::from("int_column")) {
+    match index_builder2::create_byte_code(String::from("int_column")) {
         Err(e) => println!("error creating bytecode: {:?}", e),
         Ok(()) => println!("Successfully created bytecode for the file"),
     }
