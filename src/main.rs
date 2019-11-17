@@ -15,6 +15,7 @@ fn write_to_file(arr: &[u32]) -> Result<(), Error> {
 
 fn main() {
 
+    
     index_builder::create_column_store("src/sample.csv", "output_col", 3);
     let mut arr: [u32; 128] = [0; 128];
     for i in 0..64 {
@@ -34,5 +35,6 @@ fn main() {
         Err(e) => println!("error creating bytecode: {:?}", e),
         Ok(()) => println!("Successfully created bytecode for the file"),
     }
-
+    
+    scanner::scanBetween(10, 50);
 }
