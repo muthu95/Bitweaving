@@ -1,8 +1,10 @@
 use std::fs::File;
+use std::io::prelude::*;
 use std::io::{Write, Error};
 mod index_builder2;
 mod index_builder;
 mod scanner;
+//mod bitgroup;
 
 extern crate bit_vec;
 
@@ -31,10 +33,7 @@ fn main() {
     //Use this once to create the "int_column" file for creating the input test file
     write_to_file(&arr);
 
-    match index_builder2::create_byte_code(String::from("int_column")) {
-        Err(e) => println!("error creating bytecode: {:?}", e),
-        Ok(()) => println!("Successfully created bytecode for the file"),
-    }
-    
-    scanner::scanBetween(10, 50);
+    let mut bit_groups: Vec<Vec<u32>> = Vec::new();
+    index_builder2::create_byte_code(String::from("int_column"), &mut bit_groups);
+    scanner::scan_between(bit_groups, 10, 50);
 }

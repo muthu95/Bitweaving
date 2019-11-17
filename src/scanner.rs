@@ -8,14 +8,14 @@ use bit_vec::BitVec;
 //use std::collections::BitVec;
 
 //pub fn scanBetween (input: Vec<Vec<u32>>, C1: u64, C2: u64) -> BitVec {
-pub fn scanBetween (C1: u64, C2: u64) -> BitVec {
+pub fn scan_between (input: Vec<Vec<u32>>, C1: u64, C2: u64) -> BitVec {
     // number of words per segment
-    let k:usize =  32;
+    let k:usize =  8;
 
     // number of words per group
-    let B:usize = 8;
+    let B:usize = 2;
     let number_of_segments:usize = 4;
-    let segment_size = 3; // dummy
+    //let segment_size = 3; // dummy
 
     let mut filterBv = BitVec::new();
     let mut resultBv = BitVec::new();
@@ -62,12 +62,10 @@ pub fn scanBetween (C1: u64, C2: u64) -> BitVec {
 
             for i in start..end {
                 println!("word number: {}", i);
-                /*
                 mgt = mgt | (meq1 & (!C1Vec[i]) & input[s][i]);
                 mlt = mlt | (meq2 & (!C2Vec[i]) & !input[s][i]);
                 meq1 = meq1 & !(input[s][i] ^ C1Vec[i]);
                 meq2 = meq2 & !(input[s][i] ^ C2Vec[i]);
-                */
             }
         }
         let mut mResult:u32 = mgt & mlt;
