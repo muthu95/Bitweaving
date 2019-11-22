@@ -151,9 +151,9 @@ pub fn create_byte_code(filename: String, mut bit_groups: &mut Vec<Vec<u32>>) ->
         process_segment(&current_segment, &mut bit_groups);
     }*/
 
-    let filename = String::from("int_column_index");
-    write_bg_to_file(&filename, &bit_groups, &segment_counter)?;
-    read_bg_from_file(&filename)?;
+    let idx_filename = String::from("int_column_index");
+    write_bg_to_file(&idx_filename, &bit_groups, &segment_counter)?;
+    read_bg_from_file(&idx_filename)?;
     Ok(())
 }
 
