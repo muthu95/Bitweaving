@@ -15,6 +15,7 @@ fn write_usize(data: &usize, buf_writer: &mut BufWriter<File>) -> Result<(), Err
     buf_writer.write(&data.to_be_bytes())?;
     Ok(())
 }
+
 fn read_usize(buf_reader: &mut BufReader<File>) -> Result<(usize), Error> {
     //TODO check size of usize. in 32bit machine its 4 bytes only
     let mut buffer: [u8; 8] = [0; 8];
@@ -48,36 +49,6 @@ fn write_bg_to_file(filename: &String, bit_groups: &Vec<Vec<u32>>, segment_count
             buf_writer.write_u32::<BigEndian>(bit_groups[i][j])?;
         }
     }
-    println!("Successfully wrote the index into file.");
-    Ok(())
-}
-
-fn read_bg_from_file(filename: &String) -> Result<(), Error> {
-    let input_f = File::open(&filename)?;
-    let mut buf_reader = BufReader::new(input_f);
-    let k_from_file = read_usize(&mut buf_reader).unwrap();
-    let b_from_file = read_usize(&mut buf_reader).unwrap();
-    let num_segments = read_usize(&mut buf_reader).unwrap();
-    println!("Reading from file");
-    println!("K: {}", k_from_file);
-    println!("B: {}", b_from_file);
-    println!("segCount: {}", num_segments);
-    let mut bit_groups: Vec<Vec<u32>> = Vec::new();
-    loop {
-        let mut bg_size = read_usize(&mut buf_reader).unwrap();
-        if bg_size == 0 {
-            break;
-        }
-        let mut current_bg: Vec<u32> = Vec::new();
-        while bg_size != 0 {
-            let data = buf_reader.read_u32::<BigEndian>().unwrap();
-            current_bg.push(data);
-            bg_size -= 1;
-        }
-        bit_groups.push(current_bg);
-    }
-
-    println!("BIT GROUP: {:?}", bit_groups);
     Ok(())
 }
 
@@ -116,15 +87,16 @@ fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
     }
 }
 
-pub fn create_byte_code(filename: String, mut bit_groups: &mut Vec<Vec<u32>>) -> Result<(), Error> {
-    println!("Creating bytecode for the file: {}", filename);
+pub fn create_bg_file(inp_filename: &String, bg_filename: &String) -> Result<(), Error> {
+    println!("Creating bytecode for the file: {}", inp_filename);
 
-    let input = File::open(filename)?;
+    let input = File::open(inp_filename)?;
     let buffered = BufReader::new(input);
 
     let mut lines_read: usize = 0;
     let mut current_segment: [u32; K] = [0; K];
     let mut segment_counter: usize = 0;
+    let mut bit_groups: Vec<Vec<u32>> = Vec::new();
 
     //Read input file line by line
     for line in buffered.lines() {
@@ -151,9 +123,33 @@ pub fn create_byte_code(filename: String, mut bit_groups: &mut Vec<Vec<u32>>) ->
         process_segment(&current_segment, &mut bit_groups);
     }*/
 
-    let idx_filename = String::from("int_column_index");
-    write_bg_to_file(&idx_filename, &bit_groups, &segment_counter)?;
-    read_bg_from_file(&idx_filename)?;
+    write_bg_to_file(&bg_filename, &bit_groups, &segment_counter)?;
+    println!("Successfully wrote the index into file.");
     Ok(())
 }
 
+pub fn read_bg_from_file(bg_filename: &String, bit_groups: &mut Vec<Vec<u32>>) -> Result<(), Error> {
+    println!("Reading from file");
+    let input_f = File::open(&bg_filename)?;
+    let mut buf_reader = BufReader::new(input_f);
+    let k_from_file = read_usize(&mut buf_reader).unwrap();
+    let b_from_file = read_usize(&mut buf_reader).unwrap();
+    let num_segments = read_usize(&mut buf_reader).unwrap();
+    println!("K: {}", k_from_file);
+    println!("B: {}", b_from_file);
+    println!("segCount: {}", num_segments);
+    loop {
+        let mut bg_size = read_usize(&mut buf_reader).unwrap();
+        if bg_size == 0 {
+            break;
+        }
+        let mut current_bg: Vec<u32> = Vec::new();
+        while bg_size != 0 {
+            let data = buf_reader.read_u32::<BigEndian>().unwrap();
+            current_bg.push(data);
+            bg_size -= 1;
+        }
+        bit_groups.push(current_bg);
+    }
+    Ok(())
+}
