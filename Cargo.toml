@@ -1,7 +1,7 @@
 [package]
 name = "bit_weaving"
 version = "0.1.0"
-authors = ["muthu"]
+authors = ["muthu", "surya"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

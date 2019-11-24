@@ -5,8 +5,9 @@ use std::io::prelude::*;
 extern crate byteorder;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
+use super::BitGroup;
 //K is number of words in a segment. (As in paper)
-const K: usize =  8;
+const K: usize =  32;
 
 //B is size of each Bit Group. (As in paper)
 const B: usize = 2;
@@ -75,6 +76,7 @@ fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
         }
 
         //Finding the bit group index.
+        println!("{}", (i/B));
         let bg_index: usize = (K/B) - 1 - (i/B);
 
         //If the index isn't found, creating an empty vector.
@@ -87,7 +89,7 @@ fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
     }
 }
 
-pub fn create_bg_file(inp_filename: &String, bg_filename: &String) -> Result<(), Error> {
+pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filename: &String) -> Result<(), Error> {
     println!("Creating bytecode for the file: {}", inp_filename);
 
     let input = File::open(inp_filename)?;
@@ -123,7 +125,14 @@ pub fn create_bg_file(inp_filename: &String, bg_filename: &String) -> Result<(),
         process_segment(&current_segment, &mut bit_groups);
     }*/
 
-    write_bg_to_file(&bg_filename, &bit_groups, &segment_counter)?;
+    //write_bg_to_file(&bg_filename, &bit_groups, &segment_counter)?;
+
+    bit_group.k = K;
+    bit_group.b = B;
+    bit_group.segment_size = segment_counter;
+    bit_group.bit_groups = bit_groups;
+
+    bit_group.write_file(bg_filename);
     println!("Successfully wrote the index into file.");
     Ok(())
 }
@@ -140,12 +149,14 @@ pub fn read_bg_from_file(bg_filename: &String, bit_groups: &mut Vec<Vec<u32>>) -
     println!("segCount: {}", num_segments);
     loop {
         let mut bg_size = read_usize(&mut buf_reader).unwrap();
+        println!("size: {}", bg_size);
         if bg_size == 0 {
             break;
         }
         let mut current_bg: Vec<u32> = Vec::new();
         while bg_size != 0 {
             let data = buf_reader.read_u32::<BigEndian>().unwrap();
+            //println!("data: {}", data);
             current_bg.push(data);
             bg_size -= 1;
         }
