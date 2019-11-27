@@ -1,29 +1,36 @@
+#![feature(asm)]
+
 use std::fs::File;
 use std::io::{Write, Error};
 mod bitgroup;
+mod naivescan;
 mod index_builder;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder2;
 use self::bitgroup::scanner;
+
+use self::naivescan::naive_scanner;
+
 extern crate bit_vec;
 
 fn fill_inp_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
     let mut output = File::create(&inp_filename)?;
-    for k in 0..128 {
+    for k in 0..1280000 {
         write!(output, "{}\n", arr[k])?;
     }
     Ok(())
 }
 
+
 fn main() -> Result<(), Error> {
     index_builder::create_column_store("src/sample.csv", "output_col", 3);
-    let mut arr: [u32; 128] = [0; 128];
-    for i in 0..64 {
+    let mut arr: [u32; 1280000] = [0; 1280000];
+    for i in 0..640000 {
         arr[i as usize] = i;
     }
-    let mut j:usize = 64;
-    for i in 0..64 {
+    let mut j:usize = 640000;
+    for i in 0..640000 {
         arr[j] = i;
         j += 1;
     }
@@ -51,6 +58,45 @@ fn main() -> Result<(), Error> {
         }
     }
     
-    scanner::scan_between(bit_group, 30, 40);
+    let mut diff_early: u64 = 0;
+    let mut diff_late: u64 = 0;
+
+    unsafe {
+        asm!("
+                    rdtscp\n
+                    shl rdx, 32\n
+                    or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
+
+        scanner::scan_between(bit_group, 30, 40);
+
+        asm!("
+                rdtscp\n
+                shl rdx, 32\n
+                or rax, rdx\n
+                ": "={rax}"(diff_late)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");    
+    }
+
+    println!("Bitweaving scan - cpu cycles: {}", diff_late - diff_early);
+
+    diff_early = 0;
+    diff_late = 0;
+
+    unsafe {
+        asm!("
+                    rdtscp\n
+                    shl rdx, 32\n
+                    or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
+
+        naivescan::naive_scanner::scan_between(&arr, 30, 40);
+
+        asm!("
+                rdtscp\n
+                shl rdx, 32\n
+                or rax, rdx\n
+                ": "={rax}"(diff_late)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
+    }
+
+    println!("Naive scan - cpu cycles: {}", diff_late - diff_early);
+
     Ok(())
 }
