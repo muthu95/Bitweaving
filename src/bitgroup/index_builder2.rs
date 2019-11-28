@@ -10,7 +10,7 @@ use super::BitGroup;
 const K: usize =  32;
 
 //B is size of each Bit Group. (As in paper)
-const B: usize = 2;
+const B: usize = 8;
 
 fn write_usize(data: &usize, buf_writer: &mut BufWriter<File>) -> Result<(), Error> {
     buf_writer.write(&data.to_be_bytes())?;
@@ -76,7 +76,7 @@ fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
         }
 
         //Finding the bit group index.
-        println!("{}", (i/B));
+        //println!("{}", (i/B));
         let bg_index: usize = (K/B) - 1 - (i/B);
 
         //If the index isn't found, creating an empty vector.

@@ -80,6 +80,6 @@ pub fn scan_between (input_bit_group : BitGroup, C1: u32, C2: u32) -> BitVec {
         println!("count {}", count);
         */
     }
-    
+    println!("{:?}", resultBv);
     return resultBv;
 }
