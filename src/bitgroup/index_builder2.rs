@@ -10,7 +10,7 @@ use super::BitGroup;
 const K: usize =  32;
 
 //B is size of each Bit Group. (As in paper)
-const B: usize = 8;
+const B: usize = 4;
 
 fn write_usize(data: &usize, buf_writer: &mut BufWriter<File>) -> Result<(), Error> {
     buf_writer.write(&data.to_be_bytes())?;

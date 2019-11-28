@@ -57,6 +57,7 @@ pub fn scan_between (input_bit_group : BitGroup, C1: u32, C2: u32) -> BitVec {
             }
 
             let mut start = s * b;
+            //Shouldn't this be cmp::min(s * b + b, s * b + k)?
             let mut end = cmp::min(s * b + b, k);
             
             for i in start..end {
