@@ -22,7 +22,7 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
     let mut result_bv = BitVec::new();
 
     let all_zeros = u32x4::splat(0);
-    let all_ones = u32x4::splat(1);
+    let all_ones = u32x4::splat(!0);
 
     let mut c1_vec: Vec<u32x4> = vec![all_zeros; 32];
     let mut c2_vec: Vec<u32x4> = vec![all_zeros; 32];
@@ -44,7 +44,6 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
     }
 
     let k_b = k/b;
-
     let mut s = 0;
     while s < segment_size {
         let mut big_mlt = all_zeros;
@@ -75,19 +74,15 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
             }
         }
         let m_result = big_mgt & big_mlt;
-        //println!("{:?}", m_result);
-        //println!("============");
-        //Should convert to m_result to bytes. Runtime Error here
-
+        //println!("{:?}", big_mgt);
+        //println!("{:?}", big_mlt);
         // Need to find an optimized way
-        /*
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(0).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(1).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(2).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(2).to_be_bytes()));
-        */
         s += 4;
     }
-    //println!("{:?}", result_bv);
+    println!("{:?}", result_bv);
     return result_bv;
 }
