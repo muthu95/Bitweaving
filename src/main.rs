@@ -2,6 +2,9 @@
 
 use std::fs::File;
 use std::io::{Write, Error};
+
+use packed_simd::u32x8;
+
 mod bitgroup;
 mod naivescan;
 mod index_builder;
@@ -9,7 +12,6 @@ mod index_builder;
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder2;
 use self::bitgroup::scanner;
-
 use self::naivescan::naive_scanner;
 
 extern crate bit_vec;
@@ -54,7 +56,7 @@ fn main() -> Result<(), Error> {
     //println!("BIT GROUP: {:?}", bit_groups);
     for i in 0..bit_group.bit_groups.len() {
         for j in 0..bit_group.bit_groups[i].len() {
-            println!("val  {}", bit_group.bit_groups[i][j]);
+            //println!("val  {}", bit_group.bit_groups[i][j]);
         }
     }
     

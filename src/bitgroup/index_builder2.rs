@@ -54,7 +54,7 @@ fn write_bg_to_file(filename: &String, bit_groups: &Vec<Vec<u32>>, segment_count
 }
 
 fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
-    println!("Elements in segment: {:?}", segment);
+    //println!("Elements in segment: {:?}", segment);
     
     let mut i:usize = K;
 
@@ -133,7 +133,7 @@ pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filena
     bit_group.bit_groups = bit_groups;
 
     bit_group.write_file(bg_filename);
-    println!("Successfully wrote the index into file.");
+    //println!("Successfully wrote the index into file.");
     Ok(())
 }
 
