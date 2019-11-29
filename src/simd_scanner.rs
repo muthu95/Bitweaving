@@ -1,4 +1,6 @@
 use std::cmp;
+use std::mem;
+use packed_simd::u32x4;
 use bit_vec::BitVec;
 #[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::*;
@@ -39,65 +41,51 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, C1: u32, C2: u32) -> Bit
     }
 
     let k_b = k/b;
-
-    for s in 0..segment_size {
-        let mut mlt = 0;
-        let mut mgt = 0;
-        let mut meq1 = !(0);
-        let mut meq2 = !(0);
-
+    let all_zeros = u32x4::splat(0);
+    let mut s = 0;
+    while s < segment_size {
+        let mut big_mlt = u32x4::splat(0);
+        let mut big_mgt = u32x4::splat(0);
+        let mut big_meq1 = u32x4::splat(!0);
+        let mut big_meq2 = u32x4::splat(!0);
         let mut index = 0;
         for g in 0..k_b {
-
-            if meq1 == 0 && meq2 == 0 {
+            println!("@@@@@@@ {}", g);
+            if big_meq1.eq(all_zeros).all() && big_meq2.eq(all_zeros).all() {
                 break;
             }
-
             let start = s * b;
-            let end = cmp::min(s * b + b, k);
+            let end = cmp::min(s * b + b, s * b + k);
 
             println!("start: {} to end: {}", start, end);
-            let mut P = _mm256_set_epi32(input[g][start] as i32, input[g][start] as i32, 
-                input[g][start] as i32, input[g][start] as i32, input[g][start] as i32,
-                input[g][start] as i32, input[g][start] as i32, input[g][start] as i32);
-            let mut P_C = _mm256_xor_si256(P, _mm256_set1_epi64x(-1));
-            let mut b_meq1 = _mm256_set1_epi32(meq1);
-            let mut b_meq2 = _mm256_set1_epi32(meq2);
-            let mut b_mgt = _mm256_set1_epi32(mgt);
-            let mut b_mlt = _mm256_set1_epi32(mlt);
-            let U = _mm256_set1_epi32(c1_vec[index] as i32);
-            let V = _mm256_set1_epi32(c2_vec[index] as i32);
-            let U_C = _mm256_xor_si256(U, _mm256_set1_epi64x(-1));
-
-            let mut C = _mm256_and_si256(U_C, P);
-            C = _mm256_and_si256(b_meq1, C);
-            C = _mm256_or_si256(b_mgt, C);
-            //mask and reduce
-
-            let mut D = _mm256_and_si256(V, P_C);
-            D = _mm256_and_si256(b_meq2, D);
-            D = _mm256_or_si256(b_mlt, D);
-            //mask and reduce
-
-            let mut X = _mm256_xor_si256(P, U);
-            X = _mm256_xor_si256(X, _mm256_set1_epi64x(-1));
-            X = _mm256_and_si256(b_meq1, X);
-
-            let mut Y = _mm256_xor_si256(P, V);
-            Y = _mm256_xor_si256(Y, _mm256_set1_epi64x(-1));
-            Y = _mm256_and_si256(b_meq1, Y);
-
-            /*for i in start..end {
-                mgt = mgt | (meq1 & (!c1_vec[index]) & input[g][i]);
-                mlt = mlt | (meq2 & (c2_vec[index]) & (!input[g][i]));
-                meq1 = meq1 & !(input[g][i] ^ c1_vec[index]);
-                meq2 = meq2 & !(input[g][i] ^ c2_vec[index]);
+            for i in start..end {
+                println!("$$$$$$$ {}", i);
+                //Condition to avoid overflow
+                if (i + (3*b)) >= input[g].len() {
+                    break;
+                }
+                let inp = u32x4::new(input[g][i], input[g][i + b], input[g][i + (2*b)], input[g][i + (3*b)]);
+                //c1i and c2i can be computed outside and reused.
+                let c1i = u32x4::splat(c1_vec[index]);
+                let c2i = u32x4::splat(c2_vec[index]);
+                //println!("{:?}, {:?}, {:?}", inp, c1i, c2i);
+                big_mgt = big_mgt | (big_meq1 & (!c1i & inp));
+                //mgt = mgt | (meq1 & (!c1_vec[index]) & input[g][i]);
+                big_mlt = big_mlt | (big_meq2 & (c2i & !inp));
+                //mlt = mlt | (meq2 & (c2_vec[index]) & (!input[g][i]));
+                big_meq1 = big_meq1 & !(inp ^ c1i);
+                //meq1 = meq1 & !(input[g][i] ^ c1_vec[index]);
+                big_meq2 = big_meq2 & !(inp ^ c2i);
+                //meq2 = meq2 & !(input[g][i] ^ c2_vec[index]);
                 index = index + 1;
-            }*/
+            }
         }
-        let m_result = mgt & mlt;
-        result_bv.append(&mut BitVec::from_bytes(&m_result.to_be_bytes()));
-        
+        let m_result = big_mgt & big_mlt;
+        //println!("{:?}", m_result);
+        //println!("============");
+        //Should convert to m_result to bytes. Runtime Error here
+        //result_bv.append(&mut BitVec::from_bytes(m_result));
+
         // TODO: For Testing purpose. Remove it in the final version
         /*let mut count = 0;
         for i in 0..result_bv.len() {
@@ -107,6 +95,8 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, C1: u32, C2: u32) -> Bit
         } 
         println!("count {}", count);
         */
+        
+        s += 4;
     }
     println!("{:?}", result_bv);
     return result_bv;
