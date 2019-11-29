@@ -7,16 +7,16 @@ use std::cmp;
 use bit_vec::BitVec;
 
 
-pub fn scan_between (arr: &[u32], C1: u32, C2: u32) -> BitVec {
-    let mut resultBv = BitVec::new();
+pub fn scan_between (arr: &[u32], c1: u32, c2: u32) -> BitVec {
+    let mut result_bv = BitVec::new();
 
     for i in 0..arr.len() {
-        if arr[i] > C1 && arr[i] < C2 {
-            resultBv.push(true);
+        if arr[i] > c1 && arr[i] < c2 {
+            result_bv.push(true);
         } else {
-            resultBv.push(false);
+            result_bv.push(false);
         }
     }
 
-    return resultBv;
+    return result_bv;
 }

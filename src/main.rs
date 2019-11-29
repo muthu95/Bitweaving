@@ -8,6 +8,7 @@ use packed_simd::u32x8;
 mod bitgroup;
 mod naivescan;
 mod index_builder;
+mod simd_scanner;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder2;
@@ -69,8 +70,8 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        scanner::scan_between(bit_group, 30, 40);
-
+        //scanner::scan_between(bit_group, 30, 40);
+        simd_scanner::scan_between(bit_group, 30, 40);
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
@@ -100,5 +101,6 @@ fn main() -> Result<(), Error> {
 
     println!("Naive scan - cpu cycles: {}", diff_late - diff_early);
 
+    
     Ok(())
 }
