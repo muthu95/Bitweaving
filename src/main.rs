@@ -7,17 +7,19 @@ use packed_simd::u32x8;
 
 mod bitgroup;
 mod naivescan;
-mod index_builder;
 mod simd_scanner;
 
 use self::bitgroup::BitGroup;
-use self::bitgroup::index_builder2;
+use self::bitgroup::index_builder;
 use self::bitgroup::scanner;
 use self::naivescan::naive_scanner;
 
+use std::collections::HashMap;
+
+extern crate config;
 extern crate bit_vec;
 
-fn fill_inp_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
+fn fill_input_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
     let mut output = File::create(&inp_filename)?;
     for k in 0..1280000 {
         write!(output, "{}\n", arr[k])?;
@@ -27,7 +29,13 @@ fn fill_inp_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
 
 
 fn main() -> Result<(), Error> {
-    index_builder::create_column_store("src/sample.csv", "output_col", 3);
+    let mut settings = config::Config::default();
+    settings.merge(config::File::with_name("Settings")).unwrap();
+    let mut settings_map = settings.try_into::<HashMap<String, String>>().unwrap();
+    let input_path = settings_map.get(&"input_path".to_string()); // can this be done better?
+    let output_path = settings_map.get(&"output_path".to_string());
+   
+    index_builder::create_column_store(&[&input_path.unwrap(), "sample.csv"].concat(), &[&input_path.unwrap(), "output_col"].concat(), 3);
     let mut arr: [u32; 1280000] = [0; 1280000];
     for i in 0..640000 {
         arr[i as usize] = i;
@@ -38,23 +46,16 @@ fn main() -> Result<(), Error> {
         j += 1;
     }
 
-    let inp_filename = String::from("int_column");
-    //Use this once to create the "int_column" file for creating the input test file
-    fill_inp_file(&arr, &inp_filename)?;
+    let input_filename = &[&input_path.unwrap(), "int_column"].concat();
+    fill_input_file(&arr, &input_filename)?;
 
 
     let mut bit_group = BitGroup {k: 0, b: 0, segment_size: 0, bit_groups: Vec::new()};
 
-    let bg_filename = String::from("int_column_index");
-    index_builder2::create_bg_file(&mut bit_group, &inp_filename, &bg_filename)?;
-    
-    //let mut bit_groups: Vec<Vec<u32>> = Vec::new();
-    //index_builder2::read_bg_from_file(&bg_filename, &mut bit_groups)?;
-
-    println!("Reading from file");
+    let bg_filename = &[&input_path.unwrap(), "int_column_index"].concat();
+    index_builder::create_bg_file(&mut bit_group, &input_filename, &bg_filename)?;
     bit_group.read_file(&bg_filename);
 
-    //println!("BIT GROUP: {:?}", bit_groups);
     for i in 0..bit_group.bit_groups.len() {
         for j in 0..bit_group.bit_groups[i].len() {
             //println!("val  {}", bit_group.bit_groups[i][j]);

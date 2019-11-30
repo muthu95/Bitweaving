@@ -77,12 +77,17 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
         //println!("{:?}", big_mgt);
         //println!("{:?}", big_mlt);
         // Need to find an optimized way
+        /*
+
+        This is taking too many CPU cycles compared to the actual scan.
+
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(0).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(1).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(2).to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&m_result.extract(2).to_be_bytes()));
+        */
         s += 4;
     }
-    println!("{:?}", result_bv);
+    //println!("{:?}", result_bv);
     return result_bv;
 }
