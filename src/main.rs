@@ -3,11 +3,10 @@
 use std::fs::File;
 use std::io::{Write, Error};
 
-use packed_simd::u32x8;
-
 mod bitgroup;
 mod naivescan;
 mod simd_scanner;
+mod simd_scanner2;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder;
@@ -72,7 +71,7 @@ fn main() -> Result<(), Error> {
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
         //scanner::scan_between(bit_group, 30, 40);
-        simd_scanner::scan_between(bit_group, 30, 40);
+        simd_scanner2::scan_between(bit_group, 30, 40);
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
