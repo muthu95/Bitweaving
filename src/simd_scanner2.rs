@@ -62,6 +62,7 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Bit
                 if (i + (3*b)) >= input[g].len() {
                     break;
                 }
+                
                 let inp = _mm_set_epi32(input[g][i] as i32, input[g][i + b] as i32, input[g][i + (2*b)] as i32, input[g][i + (3*b)] as i32);
                 let c1i = c1_vec[index];
                 let c2i = c2_vec[index];
