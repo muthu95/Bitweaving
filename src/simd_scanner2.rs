@@ -84,14 +84,14 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Bit
                 index = index + 1;
             }
         }
-       /*
+       
         let m_result = _mm_and_si128(big_mgt, big_mlt);
         let unpacked: [u32; 4] = mem::transmute(m_result);
         result_bv.append(&mut BitVec::from_bytes(&unpacked[3].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[2].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[1].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[0].to_be_bytes()));
-        */
+        
         s += 4;
     }
     //println!("{:?}", result_bv);

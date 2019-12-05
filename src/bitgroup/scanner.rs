@@ -71,14 +71,6 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
             
             for i in start..end {
 
-              //  mgt = mgt | (meq1 & (1) & 1);
-              //  mlt = mlt | (meq1 & (1) & 1);
-              //  meq1 = meq1 & !(0 ^ 0);
-              //  meq2 = meq2 & !(0 ^ 0);
-              //  mlt = mlt | (meq2 & (c2_vec[index]) & (!input[g][i]));
-              //  meq1 = meq1 & !(input[g][i] ^ c1_vec[index]);
-               // meq2 = meq2 & !(input[g][i] ^ c2_vec[index]);
-
                 mgt = mgt | (meq1 & (!c1_arr[index]) & input[g][i]);
                 mlt = mlt | (meq2 & (c2_arr[index]) & (!input[g][i]));
                 meq1 = meq1 & !(input[g][i] ^ c1_arr[index]);
@@ -86,8 +78,8 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
                 index = index + 1;
             }
         }
-        //let mut m_result:u32 = mgt & mlt;
-        //result_bv.append(&mut BitVec::from_bytes(&m_result.to_be_bytes()));
+        let mut m_result:u32 = mgt & mlt;
+        result_bv.append(&mut BitVec::from_bytes(&m_result.to_be_bytes()));
         
         // TODO: For Testing purpose. Remove it in the final version
         /*let mut count = 0;
