@@ -44,19 +44,29 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Bit
 
     let k_b = k/b;
     let mut s = 0;
+
+    let mut big_mlt = all_zeros;
+    let mut big_mgt = all_zeros;
+    let mut big_meq1 = all_ones;
+    let mut big_meq2 = all_ones;
+    let mut index = 0;
+
+    let mut start = 0;
+    let mut end = 0;
+    
     while s < segment_size {
-        let mut big_mlt = all_zeros;
-        let mut big_mgt = all_zeros;
-        let mut big_meq1 = all_ones;
-        let mut big_meq2 = all_ones;
-        let mut index = 0;
+        big_mlt = all_zeros;
+        big_mgt = all_zeros;
+        big_meq1 = all_ones;
+        big_meq2 = all_ones;
+        index = 0;
         for g in 0..k_b {
             if _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq1, all_zeros)) == 0xFFFF && 
                 _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq2, all_zeros)) == 0xFFFF {
                 break;
             }
-            let start = s * b;
-            let end = cmp::min(s * b + b, s * b + k);
+            start = s * b;
+            end = cmp::min(s * b + b, s * b + k);
             for i in start..end {
                 //Condition to avoid overflow
                 if (i + (3*b)) >= input[g].len() {
@@ -74,13 +84,14 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Bit
                 index = index + 1;
             }
         }
+       /*
         let m_result = _mm_and_si128(big_mgt, big_mlt);
         let unpacked: [u32; 4] = mem::transmute(m_result);
         result_bv.append(&mut BitVec::from_bytes(&unpacked[3].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[2].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[1].to_be_bytes()));
         result_bv.append(&mut BitVec::from_bytes(&unpacked[0].to_be_bytes()));
-
+        */
         s += 4;
     }
     //println!("{:?}", result_bv);
