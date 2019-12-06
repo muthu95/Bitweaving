@@ -11,12 +11,13 @@ pub struct BitGroup {
     pub b: usize,
     pub segment_size: usize,
     pub bit_groups: Vec<Vec<u32>>,
+    pub bit_group_box: Box<[u32]>,
 }
 
 impl BitGroup {
 
-    fn new(k: usize, b: usize, segment_size: usize, bit_groups: Vec<Vec<u32>>) -> BitGroup {
-        BitGroup { k: k, b: b, segment_size: segment_size, bit_groups: bit_groups,}
+    pub fn new(k: usize, b: usize, segment_size: usize, bit_groups: Vec<Vec<u32>>, bit_group_box: Box::<[u32]>) -> BitGroup {
+        BitGroup { k: k, b: b, segment_size: segment_size, bit_groups: bit_groups, bit_group_box: bit_group_box}
     }
 
     fn write_usize(data: &usize, buf_writer: &mut BufWriter<File>) -> Result<(), Error> {
@@ -44,6 +45,7 @@ impl BitGroup {
         self.b = BitGroup::read_usize(&mut buf_reader).unwrap();
         self.segment_size = BitGroup::read_usize(&mut buf_reader).unwrap();
         self.bit_groups = Vec::new();
+        let mut X: Vec<u32> = Vec::new();
 
         loop {
             let mut bg_size = BitGroup::read_usize(&mut buf_reader).unwrap();
@@ -54,10 +56,12 @@ impl BitGroup {
             while bg_size != 0 {
                 let data = buf_reader.read_u32::<BigEndian>().unwrap();
                 bg.push(data);
+                X.push(data);
                 bg_size -= 1;
             }
             self.bit_groups.push(bg);
         }
+        self.bit_group_box = X.into_boxed_slice();
         Ok(())
     }
 

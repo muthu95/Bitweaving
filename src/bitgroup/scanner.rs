@@ -16,7 +16,8 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
     // number of words per group
     let b:usize = input_bit_group.b;
     let segment_size:usize = input_bit_group.segment_size;
-    let input: Vec<Vec<u32>> = input_bit_group.bit_groups;
+    let X = input_bit_group.bit_group_box;
+    let input = input_bit_group.bit_groups;
 
     let mut filter_bv = BitVec::new();
     let mut result_bv = BitVec::new();
@@ -51,6 +52,7 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
     let mut start = 0;
     let mut end = 0;
     let mut index = 0;
+    let H = b*input_bit_group.segment_size;
 
     for s in 0..segment_size {
         
@@ -70,11 +72,16 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
             end = cmp::min(s * b + b, s * b + k);
             
             for i in start..end {
-
-                mgt = mgt | (meq1 & (!c1_arr[index]) & input[g][i]);
+                
+                mgt = mgt | (meq1 & (!c1_arr[index]) & X[(g*H) + i]);
+                mlt = mlt | (meq2 & (c2_arr[index]) & (!X[(g*H) + i]));
+                meq1 = meq1 & !(X[(g*H) + i] ^ c1_arr[index]);
+                meq2 = meq2 & !(X[(g*H) + i] ^ c2_arr[index]);
+                
+                /*mgt = mgt | (meq1 & (!c1_arr[index]) & input[g][i]);
                 mlt = mlt | (meq2 & (c2_arr[index]) & (!input[g][i]));
                 meq1 = meq1 & !(input[g][i] ^ c1_arr[index]);
-                meq2 = meq2 & !(input[g][i] ^ c2_arr[index]);
+                meq2 = meq2 & !(input[g][i] ^ c2_arr[index]);*/
                 index = index + 1;
             }
         }
@@ -91,6 +98,6 @@ pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
         println!("count {}", count);
         */
     }
-    //println!("{:?}", resultBv);
+    //println!("{:?}", result_bv);
     return result_bv;
 }
