@@ -53,12 +53,19 @@ fn main() -> Result<(), Error> {
     let input_filename = &[&input_path.unwrap(), "int_column"].concat();
     fill_input_file(&arr, &input_filename)?;
 
-    let mut bit_group = BitGroup::new(0, 0, 0, Vec::new(), Box::new([1, 1]));
+    let mut bit_group = BitGroup::new(0, 0, 0, 0, Vec::new(), Box::new([1, 1]));
 
     let bg_filename = &[&input_path.unwrap(), "int_column_index"].concat();
     index_builder::create_bg_file(&mut bit_group, &input_filename, &bg_filename)?;
     bit_group.read_file(&bg_filename);
     
+    /*for i in 0..bit_group.bit_groups.len() {
+        for j in 0..bit_group.bit_groups[i].len() {
+            print!("{} ", bit_group.bit_groups[i][j]);
+        }
+        println!();
+    }*/
+
     let mut diff_early: u64 = 0;
     let mut diff_late: u64 = 0;
 
@@ -78,7 +85,7 @@ fn main() -> Result<(), Error> {
             let input_path = settings_map.get(&"input_path".to_string()); // can this be done better?
             let output_path = settings_map.get(&"output_path".to_string());
    
-            let mut bit_group = BitGroup::new(0, 0, 0, Vec::new(), Box::new([1, 1]));
+            let mut bit_group = BitGroup::new(0, 0, 0, 0, Vec::new(), Box::new([1, 1]));
 
             let bg_filename = &[&input_path.unwrap(), "int_column_index"].concat();
             let input_filename = &[&input_path.unwrap(), "int_column"].concat();

@@ -9,11 +9,16 @@ extern crate byteorder;
 use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 use super::BitGroup;
-//K is number of words in a segment. (As in paper)
-const K: usize =  32;
+//K is number of bits to encode a columnar value. (As in paper)
+const K: usize = 9;
 
 //B is size of each Bit Group. (As in paper)
-const B: usize = 4;
+const B: usize = 3;
+
+//Processor word length and number of words in a segment. (As in paper)
+const W: usize = 32;
+
+//NOTE: ENSURE K is divisible by B
 
 
 pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
@@ -67,7 +72,7 @@ fn process_segment(segment: &[u32], bit_groups: &mut Vec<Vec<u32>>) {
 
         let mut val:u32 = 0;
         let mut j:usize = 0;
-        while j < K {
+        while j < W {
             /*
                 j is the index for iterating through each word of the segment.
                 Here, we accumulate the i'th bit word in 'val'
@@ -94,7 +99,7 @@ pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filena
     let buffered = BufReader::new(input);
 
     let mut lines_read: usize = 0;
-    let mut current_segment: [u32; K] = [0; K];
+    let mut current_segment: [u32; W] = [0; W];
     let mut segment_counter: usize = 0;
     let mut bit_groups: Vec<Vec<u32>> = Vec::new();
 
@@ -102,11 +107,11 @@ pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filena
     for line in buffered.lines() {
        
         let string_line: String = line.unwrap();
-        current_segment[lines_read % K] = string_line.parse::<u32>().unwrap();
+        current_segment[lines_read % W] = string_line.parse::<u32>().unwrap();
         lines_read = lines_read + 1;
 
         //If a segment is filled up, then process it.
-        if lines_read % K == 0 {
+        if lines_read % W == 0 {
             process_segment(&current_segment, &mut bit_groups);
             segment_counter += 1;
         }
@@ -119,6 +124,7 @@ pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filena
     }*/
     bit_group.k = K;
     bit_group.b = B;
+    bit_group.w = W;
     bit_group.segment_size = segment_counter;
     bit_group.bit_groups = bit_groups;
 
