@@ -40,13 +40,16 @@ fn main() -> Result<(), Error> {
     let output_path = settings_map.get(&"output_path".to_string());
    
     index_builder::create_column_store(&[&input_path.unwrap(), "sample.csv"].concat(), &[&input_path.unwrap(), "output_col"].concat(), 3);
+    
+    let num = 1280000;
+    
     let mut arr: [u32; 1280000] = [0; 1280000];
     for i in 0..640000 {
-        arr[i as usize] = i;
+        arr[i as usize] = i + 2000000000;
     }
     let mut j:usize = 640000;
     for i in 0..640000 {
-        arr[j] = i;
+        arr[j] = i + 1000000000;
         j += 1;
     }
 
@@ -99,8 +102,8 @@ fn main() -> Result<(), Error> {
                             shl rdx, 32\n
                             or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
         
-                //scanner::scan_between(bit_group, 30, 40);
-                simd_scanner2::scan_between(bit_group, 30, 40);
+                scanner::scan_between(bit_group, num, 30, 40);
+                //simd_scanner2::scan_between(bit_group, 30, 40);
                 asm!("
                         rdtscp\n
                         shl rdx, 32\n
@@ -119,8 +122,8 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        scanner::scan_between(bit_group, 30, 40);
-        //simd_scanner2::scan_between(bit_group_final, 30, 40);
+        //scanner::scan_between(bit_group, num, 30, 40);
+        simd_scanner2::scan_between(bit_group_final, 30, 40);
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
