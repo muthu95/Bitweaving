@@ -29,7 +29,7 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
     }
     let mut result_arr = result_vec.into_boxed_slice();
 
-    println!("result arr size: {}", result_arr.len());
+  // println!("result arr size: {}", result_arr.len());
     let mut c1_arr = [0;32];
     let mut c2_arr = [0;32];
 
@@ -83,36 +83,19 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
             let offset = g * h;
             for i in start..end {
                 
-
                 input_index = offset + i;
                 mgt = mgt | (meq1 & (!c1_arr[index]) & input_arr[input_index]);
                 mlt = mlt | (meq2 & (c2_arr[index]) & (!input_arr[input_index]));
                 meq1 = meq1 & !(input_arr[input_index] ^ c1_arr[index]);
                 meq2 = meq2 & !(input_arr[input_index] ^ c2_arr[index]);
                 
-                /*mgt = mgt | (meq1 & (!c1_arr[index]) & input[g][i]);
-                mlt = mlt | (meq2 & (c2_arr[index]) & (!input[g][i]));
-                meq1 = meq1 & !(input[g][i] ^ c1_arr[index]);
-                meq2 = meq2 & !(input[g][i] ^ c2_arr[index]);*/
                 index = index + 1;
             }
         }
 
         result_arr[result_index] = result_arr[result_index] | (mgt & mlt);
         result_index = result_index + 1;
-        //let mut m_result:u32 = mgt & mlt;
-        //result_bv.append(&mut BitVec::from_bytes(&m_result.to_be_bytes()));
-        
-        // TODO: For Testing purpose. Remove it in the final version
-        /*let mut count = 0;
-        for i in 0..resultBv.len() {
-            if resultBv[i] == true {
-                count += 1;
-            }
-        } 
-        println!("count {}", count);
-        */
+    
     }
-    //println!("{:?}", result_bv);
     return result_arr;
 }
