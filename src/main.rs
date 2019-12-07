@@ -123,7 +123,7 @@ fn main() -> Result<(), Error> {
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
         //scanner::scan_between(bit_group, num, 30, 40);
-        simd_scanner2::scan_between(bit_group_final, 30, 40);
+        simd_scanner2::scan_between(bit_group, 30, 40);
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
