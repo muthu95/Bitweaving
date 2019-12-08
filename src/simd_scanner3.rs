@@ -27,8 +27,8 @@ pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Bo
     }
     let mut result_arr = result_vec.into_boxed_slice();
 
-    let all_zeros = _mm_set1_epi32(0);
-    let all_ones = _mm_set1_epi32(!0);
+    let all_zeros = _mm256_set1_epi32(0);
+    let all_ones = _mm256_set1_epi32(!0);
 
     let mut c1_arr = [all_zeros; 32];
     let mut c2_arr = [all_zeros; 32];
@@ -62,7 +62,7 @@ pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Bo
     let mut end = 0;
     let mut offset = 0;
     let mut m_result;
-    let mut unpacked: [u32; 4];
+    let mut unpacked: [u32; 8];
     
     while s < segment_size {
         big_mlt = all_zeros;
@@ -72,8 +72,8 @@ pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Bo
         index = 0;
         for g in 0..k_b {
 
-            if _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq1, all_zeros)) == 0xFFFF && 
-                _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq2, all_zeros)) == 0xFFFF {
+            if _mm256_movemask_epi8(_mm256_cmpeq_epi32(big_meq1, all_zeros)) == 0xFFFF && 
+                _mm256_movemask_epi8(_mm256_cmpeq_epi32(big_meq2, all_zeros)) == 0xFFFF {
                 break;
             }
 
@@ -83,23 +83,33 @@ pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Bo
             offset = g * h;
             for i in start..end {
                 //Condition to avoid overflow
-                if (offset + i + (3*b)) >= input_arr.len() {
+                if (offset + i + (7*b)) >= input_arr.len() {
                     break;
                 }
                 
-                let inp = _mm_set_epi32(input_arr[offset + i] as i32, input_arr[offset + i + b] as i32,
-                    input_arr[offset + i + (2*b)] as i32, input_arr[offset + i + (3*b)] as i32);
+                let inp = _mm256_set_epi32(input_arr[offset + i] as i32, input_arr[offset + i + b] as i32,
+                    input_arr[offset + i + (2*b)] as i32, input_arr[offset + i + (3*b)] as i32,
+                    input_arr[offset + i + (4*b)] as i32, input_arr[offset + i + (5*b)] as i32,
+                    input_arr[offset + i + (6*b)] as i32, input_arr[offset + i + (7*b)] as i32);
                 
-                big_mgt = _mm_or_si128(big_mgt,_mm_and_si128(big_meq1, _mm_and_si128(_mm_xor_si128(c1_arr[index], all_ones), inp)));
-                big_mlt = _mm_or_si128(big_mlt,_mm_and_si128(big_meq2, _mm_and_si128(c2_arr[index], _mm_xor_si128(inp, all_ones))));
-                big_meq1 = _mm_and_si128(big_meq1, _mm_xor_si128(_mm_xor_si128(inp, c1_arr[index]), all_ones));
-                big_meq2 = _mm_and_si128(big_meq2, _mm_xor_si128(_mm_xor_si128(inp, c2_arr[index]), all_ones));
+                big_mgt = _mm256_or_si256(big_mgt,_mm256_and_si256(big_meq1, _mm256_and_si256(_mm256_xor_si256(c1_arr[index], all_ones), inp)));
+                big_mlt = _mm256_or_si256(big_mlt,_mm256_and_si256(big_meq2, _mm256_and_si256(c2_arr[index], _mm256_xor_si256(inp, all_ones))));
+                big_meq1 = _mm256_and_si256(big_meq1, _mm256_xor_si256(_mm256_xor_si256(inp, c1_arr[index]), all_ones));
+                big_meq2 = _mm256_and_si256(big_meq2, _mm256_xor_si256(_mm256_xor_si256(inp, c2_arr[index]), all_ones));
                 index = index + 1;
             }
         }
        
-        m_result = _mm_and_si128(big_mgt, big_mlt);
+        m_result = _mm256_and_si256(big_mgt, big_mlt);
         unpacked = mem::transmute(m_result);
+        result_arr[result_index] = result_arr[result_index] | unpacked[7];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[6];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[5];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[4];
+        result_index = result_index + 1;
         result_arr[result_index] = result_arr[result_index] | unpacked[3];
         result_index = result_index + 1;
         result_arr[result_index] = result_arr[result_index] | unpacked[2];
@@ -109,7 +119,7 @@ pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Bo
         result_arr[result_index] = result_arr[result_index] | unpacked[0];
         result_index = result_index + 1;
         
-        s += 4;
+        s += 8;
     }
     //println!("Result: {:?}", result_arr);
     return result_arr;

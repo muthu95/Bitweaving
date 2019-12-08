@@ -7,6 +7,7 @@ mod bitgroup;
 mod naivescan;
 mod simd_scanner;
 mod simd_scanner2;
+mod simd_scanner3;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder;
@@ -121,7 +122,7 @@ fn main() -> Result<(), Error> {
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
         //scanner::scan_between(bit_group, num, 30, 40);
-        simd_scanner2::scan_between(bit_group, 2, 10);
+        simd_scanner2::scan_between(&bit_group, 2, 10);
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
@@ -130,6 +131,26 @@ fn main() -> Result<(), Error> {
     }
 
     println!("Bitweaving SIMD scan - cpu cycles: {}", diff_late - diff_early);
+    
+    diff_early = 0;
+    diff_late = 0;
+
+    unsafe {
+        asm!("
+                    rdtscp\n
+                    shl rdx, 32\n
+                    or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
+
+        //scanner::scan_between(bit_group, num, 30, 40);
+        simd_scanner3::scan_between(&bit_group, 2, 10);
+        asm!("
+                rdtscp\n
+                shl rdx, 32\n
+                or rax, rdx\n
+                ": "={rax}"(diff_late)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");    
+    }
+
+    println!("Bitweaving SIMD256 scan - cpu cycles: {}", diff_late - diff_early);
     
     diff_early = 0;
     diff_late = 0;
