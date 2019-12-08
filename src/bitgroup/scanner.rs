@@ -9,7 +9,7 @@ use bit_vec::BitVec;
 use super::BitGroup;
 
 //pub fn scanBetween (input: Vec<Vec<u32>>, C1: u64, C2: u64) -> BitVec {
-pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> Box<[u32]> {
+pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Box<[u32]> {
     // number of words per segment
     let k:usize =  input_bit_group.k;
 
@@ -21,7 +21,7 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
 
     let mut filter_bv = BitVec::new();
 
-    let mut result_size = num / 32;
+    let result_size = segment_size;
     let mut result_vec = Vec::with_capacity(result_size as usize);
 
     for i in 0..result_size {
@@ -57,7 +57,7 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
     let mut start = 0;
     let mut end = 0;
     let mut index = 0;
-
+    let mut offset = 0;
     let mut input_index = 0;
     let mut result_index = 0;
     let h = b * input_bit_group.segment_size;
@@ -80,7 +80,7 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
             start = s * b;
             end = cmp::min(start + b, start + k);
             
-            let offset = g * h;
+            offset = g * h;
             for i in start..end {
                 
                 input_index = offset + i;
@@ -97,5 +97,6 @@ pub fn scan_between (input_bit_group : BitGroup, num:u32, c1: u32, c2: u32) -> B
         result_index = result_index + 1;
     
     }
+    //println!("Result: {:?}", result_arr);
     return result_arr;
 }

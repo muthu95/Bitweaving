@@ -9,50 +9,60 @@ use std::arch::x86::*;
 use super::BitGroup;
 
 //pub fn scanBetween (input: Vec<Vec<u32>>, C1: u64, C2: u64) -> BitVec {
-pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> BitVec {
+pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Box<[u32]> {
     // number of words per segment
     let k:usize =  input_bit_group.k; 
 
     // number of words per group
     let b:usize = input_bit_group.b;
     let segment_size:usize = input_bit_group.segment_size;
+    let input_arr = input_bit_group.bit_group_box;
     let input: Vec<Vec<u32>> = input_bit_group.bit_groups;
 
-    let mut result_bv = BitVec::new();
+    let result_size = segment_size;
+    let mut result_vec = Vec::with_capacity(result_size as usize);
+
+    for i in 0..result_size {
+        result_vec.push(0);
+    }
+    let mut result_arr = result_vec.into_boxed_slice();
 
     let all_zeros = _mm_set1_epi32(0);
     let all_ones = _mm_set1_epi32(!0);
 
-    let mut c1_vec: Vec<__m128i> = vec![all_zeros; 32];
-    let mut c2_vec: Vec<__m128i> = vec![all_zeros; 32];
+    let mut c1_arr = [all_zeros; 32];
+    let mut c2_arr = [all_zeros; 32];
 
     for i in 0..k {
        if (c1 & (1 << (i))) > 0 {
-           c1_vec[k - i - 1] =  all_ones;
+            c1_arr[k - i - 1] =  all_ones;
        } else {
-           c1_vec[k - i - 1] = all_zeros;
+            c1_arr[k - i - 1] = all_zeros;
        }
     }
 
     for i in 0..k {
        if (c2 & (1 << (i))) > 0 {
-           c2_vec[k - i - 1] = all_ones;
+           c2_arr[k - i - 1] = all_ones;
        } else {
-           c2_vec[k - i - 1] = all_zeros;
+           c2_arr[k - i - 1] = all_zeros;
        }
     }
 
     let k_b = k/b;
     let mut s = 0;
-
     let mut big_mlt = all_zeros;
     let mut big_mgt = all_zeros;
     let mut big_meq1 = all_ones;
     let mut big_meq2 = all_ones;
     let mut index = 0;
-
+    let mut result_index = 0;
+    let h = b * input_bit_group.segment_size;
     let mut start = 0;
     let mut end = 0;
+    let mut offset = 0;
+    let mut m_result;
+    let mut unpacked: [u32; 4];
     
     while s < segment_size {
         big_mlt = all_zeros;
@@ -61,39 +71,46 @@ pub unsafe fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Bit
         big_meq2 = all_ones;
         index = 0;
         for g in 0..k_b {
+
             if _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq1, all_zeros)) == 0xFFFF && 
                 _mm_movemask_epi8(_mm_cmpeq_epi32(big_meq2, all_zeros)) == 0xFFFF {
                 break;
             }
+
             start = s * b;
             end = cmp::min(s * b + b, s * b + k);
+            
+            offset = g * h;
             for i in start..end {
                 //Condition to avoid overflow
-                if (i + (3*b)) >= input[g].len() {
+                if (offset + i + (3*b)) >= input_arr.len() {
                     break;
                 }
                 
-                let inp = _mm_set_epi32(input[g][i] as i32, input[g][i + b] as i32, input[g][i + (2*b)] as i32, input[g][i + (3*b)] as i32);
-                let c1i = c1_vec[index];
-                let c2i = c2_vec[index];
+                let inp = _mm_set_epi32(input_arr[offset + i] as i32, input_arr[offset + i + b] as i32,
+                    input_arr[offset + i + (2*b)] as i32, input_arr[offset + i + (3*b)] as i32);
                 
-                big_mgt = _mm_or_si128(big_mgt,_mm_and_si128(big_meq1, _mm_and_si128(_mm_xor_si128(c1i, all_ones), inp)));
-                big_mlt = _mm_or_si128(big_mlt,_mm_and_si128(big_meq2, _mm_and_si128(c2i, _mm_xor_si128(inp, all_ones))));
-                big_meq1 = _mm_and_si128(big_meq1, _mm_xor_si128(_mm_xor_si128(inp, c1i), all_ones));
-                big_meq2 = _mm_and_si128(big_meq2, _mm_xor_si128(_mm_xor_si128(inp, c2i), all_ones));
+                big_mgt = _mm_or_si128(big_mgt,_mm_and_si128(big_meq1, _mm_and_si128(_mm_xor_si128(c1_arr[index], all_ones), inp)));
+                big_mlt = _mm_or_si128(big_mlt,_mm_and_si128(big_meq2, _mm_and_si128(c2_arr[index], _mm_xor_si128(inp, all_ones))));
+                big_meq1 = _mm_and_si128(big_meq1, _mm_xor_si128(_mm_xor_si128(inp, c1_arr[index]), all_ones));
+                big_meq2 = _mm_and_si128(big_meq2, _mm_xor_si128(_mm_xor_si128(inp, c2_arr[index]), all_ones));
                 index = index + 1;
             }
         }
        
-        let m_result = _mm_and_si128(big_mgt, big_mlt);
-        let unpacked: [u32; 4] = mem::transmute(m_result);
-        result_bv.append(&mut BitVec::from_bytes(&unpacked[3].to_be_bytes()));
-        result_bv.append(&mut BitVec::from_bytes(&unpacked[2].to_be_bytes()));
-        result_bv.append(&mut BitVec::from_bytes(&unpacked[1].to_be_bytes()));
-        result_bv.append(&mut BitVec::from_bytes(&unpacked[0].to_be_bytes()));
+        m_result = _mm_and_si128(big_mgt, big_mlt);
+        unpacked = mem::transmute(m_result);
+        result_arr[result_index] = result_arr[result_index] | unpacked[3];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[2];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[1];
+        result_index = result_index + 1;
+        result_arr[result_index] = result_arr[result_index] | unpacked[0];
+        result_index = result_index + 1;
         
         s += 4;
     }
-    //println!("{:?}", result_bv);
-    return result_bv;
+    //println!("Result: {:?}", result_arr);
+    return result_arr;
 }
