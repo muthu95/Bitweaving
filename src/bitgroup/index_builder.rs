@@ -10,10 +10,10 @@ use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 use super::BitGroup;
 //K is number of bits to encode a columnar value. (As in paper)
-const K: usize = 9;
+const K: usize = 32;
 
 //B is size of each Bit Group. (As in paper)
-const B: usize = 3;
+const B: usize = 4;
 
 //Processor word length and number of words in a segment. (As in paper)
 const W: usize = 32;
