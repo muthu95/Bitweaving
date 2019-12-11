@@ -1,12 +1,11 @@
 use std::fs::File;
-use std::io::{BufReader, Error, BufWriter};
+use std::io::{BufReader, Error};
 use std::io::prelude::*;
 use std::path::Path;
 use std::io;
 use std::error::Error as Err;
 
 extern crate byteorder;
-use byteorder::{BigEndian, WriteBytesExt, ReadBytesExt};
 
 use super::BitGroup;
 //K is number of bits to encode a columnar value. (As in paper)
@@ -35,11 +34,11 @@ pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
     let mut output_writers = Vec::new();
     for i in 0..num_cols {
         let output_file_name = format!("{}{}", output_file, i);
-        let mut write_file = match File::create(&output_file_name) {
+        let write_file = match File::create(&output_file_name) {
             Err(why) => panic!("couldn't create {}: {}", display, why.description()),
             Ok(file) => file,
         };
-        let mut writer = io::BufWriter::new(write_file);
+        let writer = io::BufWriter::new(write_file);
         output_writers.push(writer);
     }
 

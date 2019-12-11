@@ -1,35 +1,24 @@
-use std::fs::File;
-use std::path::Path;
-use std::io;
-use std::error::Error;
-use std::io::prelude::*;
 use std::cmp;
 use bit_vec::BitVec;
-//use std::collections::BitVec;
 use super::BitGroup;
 
-//pub fn scanBetween (input: Vec<Vec<u32>>, C1: u64, C2: u64) -> BitVec {
 pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Box<[u32]> {
     // number of words per segment
     let k:usize =  input_bit_group.k;
 
     // number of words per group
     let b:usize = input_bit_group.b;
+
     let segment_size:usize = input_bit_group.segment_size;
     let input_arr = input_bit_group.bit_group_box;
-    let input = input_bit_group.bit_groups;
-
-    let mut filter_bv = BitVec::new();
-
     let result_size = segment_size;
+    
     let mut result_vec = Vec::with_capacity(result_size as usize);
-
     for i in 0..result_size {
         result_vec.push(0);
     }
     let mut result_arr = result_vec.into_boxed_slice();
 
-  // println!("result arr size: {}", result_arr.len());
     let mut c1_arr = [0;32];
     let mut c2_arr = [0;32];
 

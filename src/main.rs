@@ -6,8 +6,8 @@ use std::io::{Write, Error};
 mod bitgroup;
 mod naivescan;
 mod simd_scanner;
-mod simd_scanner2;
-mod simd_scanner3;
+mod simd_scanner_128;
+mod simd_scanner_256;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder;
@@ -23,6 +23,7 @@ use std::thread;
 extern crate config;
 extern crate bit_vec;
 
+//Can be used to create a custom index file
 fn fill_input_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
     let mut output = File::create(&inp_filename)?;
     for k in 0..1280000 {
@@ -31,53 +32,38 @@ fn fill_input_file(arr: &[u32], inp_filename: &String) -> Result<(), Error> {
     Ok(())
 }
 
+fn print_bitgroup(bit_group: &BitGroup) {
+    for i in 0..bit_group.bit_groups.len() {
+        for j in 0..bit_group.bit_groups[i].len() {
+            print!("{} ", bit_group.bit_groups[i][j]);
+        }
+        println!();
+    }
+}
 
 fn main() -> Result<(), Error> {
 
     let mut settings = config::Config::default();
     settings.merge(config::File::with_name("Settings")).unwrap();
-    let mut settings_map = settings.try_into::<HashMap<String, String>>().unwrap();
-    let input_path = settings_map.get(&"input_path".to_string()); // can this be done better?
+    let settings_map = settings.try_into::<HashMap<String, String>>().unwrap();
+    let input_path = settings_map.get(&"input_path".to_string());
     let output_path = settings_map.get(&"output_path".to_string());
    
-    index_builder::create_column_store(&[&input_path.unwrap(), "sample.csv"].concat(), &[&input_path.unwrap(), "output_col"].concat(), 3);
-    
-    let mut arr: [u32; 1280000] = [0; 1280000];
-    for i in 0..640000 {
-        arr[i as usize] = i + 2000000000;
-    }
-    let mut j:usize = 640000;
-    for i in 0..640000 {
-        arr[j] = i + 1000000000;
-        j += 1;
-    }
-
-    let input_filename = &[&input_path.unwrap(), "int_column"].concat();
-    fill_input_file(&arr, &input_filename)?;
-
+    index_builder::create_column_store(&[&input_path.unwrap(), "sample.csv"].concat(), &[&output_path.unwrap(), "output_col"].concat(), 2);
+    //Set the column for which you need to build the bitgroup
+    let index_column = "output_col1";
+    let input_filename = &[&output_path.unwrap(), index_column].concat();
     let mut bit_group = BitGroup::new(0, 0, 0, 0, Vec::new(), Box::new([1, 1]));
-
-    let bg_filename = &[&input_path.unwrap(), "int_column_index"].concat();
+    let bg_filename = format!("{}{}", output_path.unwrap(), &String::from(format!("{}_index", index_column)));
     index_builder::create_bg_file(&mut bit_group, &input_filename, &bg_filename)?;
-    bit_group.read_file(&bg_filename);
-    
-    /*for i in 0..bit_group.bit_groups.len() {
-        for j in 0..bit_group.bit_groups[i].len() {
-            print!("{} ", bit_group.bit_groups[i][j]);
-        }
-        println!();
-    }*/
+    bit_group.read_file(&bg_filename)?;
 
     let mut diff_early: u64 = 0;
     let mut diff_late: u64 = 0;
-
-    let mut core_ids = core_affinity::get_core_ids().unwrap();
- 
+    let core_ids = core_affinity::get_core_ids().unwrap();
     let handle =  thread::spawn(move || {
         // Pinning the below execution to the first core in the list.
         core_affinity::set_for_current(core_ids[0]);
-        
-
         // Need to do bitgroup read again as it should be accessible in the scope
 
         //TODO: Need to check on sharing the variable across multiple threads
@@ -89,8 +75,9 @@ fn main() -> Result<(), Error> {
 
         let mut bit_group = BitGroup::new(0, 0, 0, 0, Vec::new(), Box::new([1, 1]));
 
-        let bg_filename = &[&input_path.unwrap(), "int_column_index"].concat();
-        let input_filename = &[&input_path.unwrap(), "int_column"].concat();
+        let index_column = "output_col1";
+        format!("{}{}", output_path.unwrap(), &String::from(format!("{}_index", index_column)));
+        let input_filename = &[&output_path.unwrap(), index_column].concat();
 
         index_builder::create_bg_file(&mut bit_group, &input_filename, &bg_filename);
         bit_group.read_file(&bg_filename);
@@ -102,7 +89,7 @@ fn main() -> Result<(), Error> {
                         or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
     
             scanner::scan_between(bit_group, 2, 10);
-            //simd_scanner2::scan_between(bit_group, 30, 40);
+
             asm!("
                     rdtscp\n
                     shl rdx, 32\n
@@ -121,8 +108,8 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        //scanner::scan_between(bit_group, num, 30, 40);
-        simd_scanner2::scan_between(&bit_group, 2, 10);
+        simd_scanner_128::scan_between(&bit_group, 2, 10);
+
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
@@ -141,8 +128,8 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        //scanner::scan_between(bit_group, num, 30, 40);
-        simd_scanner3::scan_between(&bit_group, 2, 10);
+        simd_scanner_256::scan_between(&bit_group, 2, 10);
+
         asm!("
                 rdtscp\n
                 shl rdx, 32\n
@@ -156,7 +143,7 @@ fn main() -> Result<(), Error> {
     diff_late = 0;
 
 
-    unsafe {
+    /*unsafe {
         asm!("
                     rdtscp\n
                     shl rdx, 32\n
@@ -171,8 +158,7 @@ fn main() -> Result<(), Error> {
                 ": "={rax}"(diff_late)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
     }
 
-    println!("Naive scan - cpu cycles: {}", diff_late - diff_early);
+    println!("Naive scan - cpu cycles: {}", diff_late - diff_early);*/
 
-    
     Ok(())
 }
