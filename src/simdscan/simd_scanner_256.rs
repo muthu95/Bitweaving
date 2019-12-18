@@ -4,7 +4,7 @@ use std::mem;
 use std::arch::x86_64::*;
 #[cfg(target_arch = "x86")]
 use std::arch::x86::*;
-use super::BitGroup;
+use super::super::BitGroup;
 
 pub unsafe fn scan_between (input_bit_group : &BitGroup, c1: u32, c2: u32) -> Box<[u32]> {
     // number of words per segment

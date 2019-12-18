@@ -22,8 +22,6 @@ const W: usize = 32;
 
 pub fn create_column_store(input_file: &str, output_file: &str, num_cols: u64) {
 
-    //TODO -> Try to detect the number of columns in the file efficiently
-
     let path = Path::new(input_file);
     let display = path.display();
     let read_file = File::open(&path).expect("Unable to open");
@@ -127,6 +125,6 @@ pub fn create_bg_file(bit_group: &mut BitGroup, inp_filename: &String, bg_filena
     bit_group.segment_size = segment_counter;
     bit_group.bit_groups = bit_groups;
 
-    bit_group.write_file(bg_filename);
+    bit_group.write_file(bg_filename)?;
     Ok(())
 }

@@ -7,14 +7,11 @@ use std::io::prelude::*;
 
 mod bitgroup;
 mod naivescan;
-mod simd_scanner;
-mod simd_scanner_128;
-mod simd_scanner_256;
+mod simdscan;
 
 use self::bitgroup::BitGroup;
 use self::bitgroup::index_builder;
 use self::bitgroup::scanner;
-use self::naivescan::naive_scanner;
 
 use std::collections::HashMap;
 
@@ -110,7 +107,7 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        simd_scanner_128::scan_between(&bit_group, 2, 10);
+        simdscan::simd_scanner_128::scan_between(&bit_group, 2, 10);
 
         asm!("
                 rdtscp\n
@@ -130,7 +127,7 @@ fn main() -> Result<(), Error> {
                     shl rdx, 32\n
                     or rax, rdx\n": "={rax}"(diff_early)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
 
-        simd_scanner_256::scan_between(&bit_group, 2, 10);
+        simdscan::simd_scanner_256::scan_between(&bit_group, 2, 10);
 
         asm!("
                 rdtscp\n
@@ -143,7 +140,7 @@ fn main() -> Result<(), Error> {
 
     let mut arr: Vec<u32> = Vec::new();
     let input_file = File::open(&input_filename)?;
-    let mut buf_reader = BufReader::new(input_file);
+    let buf_reader = BufReader::new(input_file);
     for line in buf_reader.lines() {       
         let string_line: String = line.unwrap();
         arr.push(string_line.parse::<u32>().unwrap());

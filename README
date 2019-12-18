@@ -1,0 +1,55 @@
+In this project, we have implemented Bitweaving/V in two flavours (using ALU instructions and
+SIMD instructions) to perform scans in main memory databases and evaluated its performance
+against a Naive main memory scan method. The parameters of Bitweaving technique are configurable
+enabling to measure the performance for different settings. 
+
+#####
+
+TO RUN THE PROJECT, FOLLOW THE STEPS GIVEN BELOW
+
+1) Install Rust Nightly build by running the following command,
+$ curl -s https://static.rust-lang.org/rustup.sh | sh -s -- --channel=nightly
+Installation guide is given in the link,
+https://doc.rust-lang.org/book/ch01-01-installation.html
+
+Note that this project uses asm features of nightly channel to measure the number of CPU cycles
+and hence it is required to install the nightly build.
+If you want to run it with the stable channel of Rust, please comment out the asm functions
+used in main.rs
+
+2) [IMPORTANT] 'Settings.toml' defines two variables
+input_path -> Path to the input dataset file
+output_path -> Path to store the input dataset in column-major order and the generated index file.
+Configure these two variables to point to your local directories.
+
+3) Compile our project with the command
+'cargo build' -> To build in development profile. (Recommended for debugging)
+'cargo build --release' -> To build in release profile with optimizations. (Recommended for testing)
+
+4) Run the executable binary with the command
+'cargo run' -> To run the development profile.
+'cargo run --release' -> To run the release profile.
+
+The libraries required to run the project are defined in the 'dependencies' section 
+of the 'Cargo.toml' file. These libraries are downloaded/updated when the project is built.
+
+The following parameters can be configured in the src/bitgroup/index_builder.rs file.
+K -> Number of bits to encode a columnar value.
+B -> Bit group size
+w -> Processor word width / Number of columnar codes in a segment
+
+#####
+
+PROJECT STRUCTURE
+
+src/ -> Directory that contains the source files. 
+src/bitgroup/ -> Directory contains the source code to build the bit groups and store it in a index file.
+src/bitgroup/scanner.rs -> The ALU instructions flavour of Bitweaving is implemented in this file.
+src/simdscan/simd_scanner_128.rs -> Bitweaving implemented using 128-bit SIMD words.
+src/simdscan/simd_scanner_256.rs -> Bitweaving implemented using 256-bit SIMD words.
+src/naivescan/naive_scanner.rs -> Performs naive scan of the given dataset.
+
+scripts/ -> Directory that contains scripts to generate datasets of different distributions
+to evaluate performance.
+
+datasets/ -> Directory that holds evaluation datasets with different distributions.

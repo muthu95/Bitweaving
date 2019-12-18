@@ -1,5 +1,4 @@
 use std::cmp;
-use bit_vec::BitVec;
 use super::BitGroup;
 
 pub fn scan_between (input_bit_group : BitGroup, c1: u32, c2: u32) -> Box<[u32]> {
