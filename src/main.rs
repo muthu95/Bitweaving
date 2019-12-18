@@ -1,7 +1,9 @@
 #![feature(asm)]
 
 use std::fs::File;
+use std::io::{BufReader};
 use std::io::{Write, Error};
+use std::io::prelude::*;
 
 mod bitgroup;
 mod naivescan;
@@ -138,12 +140,19 @@ fn main() -> Result<(), Error> {
     }
 
     println!("Bitweaving SIMD256 scan - cpu cycles: {}", diff_late - diff_early);
+
+    let mut arr: Vec<u32> = Vec::new();
+    let input_file = File::open(&input_filename)?;
+    let mut buf_reader = BufReader::new(input_file);
+    for line in buf_reader.lines() {       
+        let string_line: String = line.unwrap();
+        arr.push(string_line.parse::<u32>().unwrap());
+    }
     
     diff_early = 0;
     diff_late = 0;
 
-
-    /*unsafe {
+    unsafe {
         asm!("
                     rdtscp\n
                     shl rdx, 32\n
@@ -158,7 +167,7 @@ fn main() -> Result<(), Error> {
                 ": "={rax}"(diff_late)::"rax", "rdx", "rcx", "rbx", "memory": "volatile", "intel");
     }
 
-    println!("Naive scan - cpu cycles: {}", diff_late - diff_early);*/
+    println!("Naive scan - cpu cycles: {}", diff_late - diff_early);
 
     Ok(())
 }
