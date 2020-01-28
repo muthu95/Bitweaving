@@ -1,2 +1,2 @@
 # Bitweaving
-CS 764 Project
+Bitweaving Implementation in Rust
